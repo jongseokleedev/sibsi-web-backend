@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func GetReceiver(c *gin.Context) {
+func GetGift(c *gin.Context) {
 
 	var receiver *receivers.Receiver
 	receiver, err := receivers.GetReceivers(c)

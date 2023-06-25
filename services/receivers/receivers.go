@@ -3,22 +3,24 @@ package receivers
 import (
 	"context"
 	"fmt"
-	"github.com/GCI-js/bangalzoo/server/configs"
 	"github.com/gin-gonic/gin"
+	"github.com/jongseokleedev/sibsi-web-backend/server/configs"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"net/http"
 	"strconv"
 	"time"
 )
 
 //import
-//import "github.com/GCI-js/bangalzoo/server/configs"
+//import "github.com/jongseokleedev/sibsi-web-backend/server/configs"
 
 type Receiver struct {
-	Index          int64
-	Name           string
-	AccountAddress string
-	AccountBank    string
-	giftId         int64
+	Name           string `json:"name"`
+	PhoneNumber    string `json:"phone_number""`
+	AccountAddress string `json:"account_address"`
+	AccountBank    string `json:"account_bank"`
+	GiftId         int64  `json:"gift_id"`
 }
 
 func GetReceivers(c *gin.Context) (*Receiver, error) {
@@ -41,4 +43,20 @@ func GetReceivers(c *gin.Context) (*Receiver, error) {
 	}
 
 	return &result, nil
+}
+
+func CreateNewReceiver(c *gin.Context) (*mongo.InsertOneResult, error) {
+	var newReceiver Receiver
+	if err := c.BindJSON(&newReceiver); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return nil, err
+	}
+
+	collection := configs.GetCollection(configs.DB, "receivers")
+	insertResult, err := collection.InsertOne(context.Background(), newReceiver)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return nil, err
+	}
+	return insertResult, nil
 }

@@ -1,4 +1,4 @@
-module github.com/GCI-js/bangalzoo/server
+module github.com/jongseokleedev/sibsi-web-backend/server
 
 go 1.19
 

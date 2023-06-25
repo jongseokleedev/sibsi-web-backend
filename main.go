@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/GCI-js/bangalzoo/server/configs"
-	"github.com/GCI-js/bangalzoo/server/routes"
+	"github.com/jongseokleedev/sibsi-web-backend/server/configs"
+	"github.com/jongseokleedev/sibsi-web-backend/server/routes"
 )
 
 func main() {

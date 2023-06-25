@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/GCI-js/bangalzoo/server/docs"
 	"github.com/gin-gonic/gin"
+	"github.com/jongseokleedev/sibsi-web-backend/server/docs"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
