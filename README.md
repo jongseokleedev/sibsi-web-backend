@@ -1,4 +1,4 @@
-# SibSi-web-backend: Fund for Bday
+# SibSi-web-backend: Fundraising assistant for Bday
 
 ### Description
 - Sib-Si-Il-Ban is a service that helps you fundraise for events.
@@ -12,7 +12,7 @@
 ### How To Start
 
 1. env setting
-   - Please see `.env.example` file and fill in the appropriate values.
+   - Please see `.env.example` file and create `.env` file with the appropriate values.
 
 
 2. execute main.go

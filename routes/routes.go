@@ -32,6 +32,7 @@ func InitRoutes() {
 	{
 		v1.GET("/docs/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 		ReceiverRoutes(v1)
+		GiftRoutes(v1)
 	}
 
 }
