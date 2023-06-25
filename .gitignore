@@ -1,0 +1,6 @@
+*.logicx
+/*.mp3
+*.env
+*.pem
+.DS_Store
+.idea

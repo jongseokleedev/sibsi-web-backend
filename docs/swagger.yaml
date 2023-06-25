@@ -1,0 +1,33 @@
+definitions:
+  responses.HttpResponse:
+    properties:
+      data:
+        additionalProperties: true
+        type: object
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+
+info:
+  contact: {}
+paths:
+  /receivers:
+    get:
+      consumes:
+      - application/json
+      description: Get all receivers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses/HttpResponse'
+        "400":
+          description: Bad Request
+      summary: Query all animals
+      tags:
+        - Animals picture
+swagger: "2.0"
