@@ -10,7 +10,7 @@ import (
 func GetReceiver(c *gin.Context) {
 
 	var receiver *receivers.Receiver
-	receiver, err := receivers.GetReceivers(c)
+	receiver, err := receivers.GetReceiver(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, responses.HttpResponse{
 			Status:  http.StatusBadRequest,

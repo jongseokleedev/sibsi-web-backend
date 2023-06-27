@@ -17,13 +17,14 @@ import (
 
 type Receiver struct {
 	Name           string `json:"name"`
+	Password       string `json:"password"`
 	PhoneNumber    string `json:"phone_number""`
 	AccountAddress string `json:"account_address"`
 	AccountBank    string `json:"account_bank"`
 	GiftId         int64  `json:"gift_id"`
 }
 
-func GetReceivers(c *gin.Context) (*Receiver, error) {
+func GetReceiver(c *gin.Context) (*Receiver, error) {
 	index, err := strconv.ParseInt(c.Param("index"), 10, 64)
 	if err != nil {
 		fmt.Println(err)

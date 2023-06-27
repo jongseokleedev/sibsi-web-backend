@@ -23,7 +23,9 @@ type Provider struct {
 }
 
 type Gift struct {
-	Name             string   `json:"name"`
+	Name string `json:"name"`
+	//Image            string   `json:"image"`
+	//AWS S3
 	Description      string   `json:"description"`
 	TargetAmount     int64    `json:"target_amount"`
 	CurrentAmount    int64    `json:"current_amount"`
