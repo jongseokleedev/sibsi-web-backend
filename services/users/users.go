@@ -17,12 +17,12 @@ import (
 //import "github.com/jongseokleedev/sibsi-web-backend/server/configs"
 
 type UserDto struct {
-	UserID   int    `json:"user_id"`
+	UserID   string `json:"user_id"`
 	Password string `json:"password"`
 }
 type User struct {
 	ID       int    `json:"id"`
-	UserID   int    `json:"user_id"`
+	UserID   string `json:"user_id"`
 	Password string `json:"password"`
 }
 
@@ -42,9 +42,10 @@ func SignUp(c *gin.Context) (*mongo.InsertOneResult, error) {
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	err := collection.FindOne(mongoCtx, bson.M{"user_id": newUser.UserID}).Decode(&result)
-	if err != nil {
+	err := collection.FindOne(mongoCtx, bson.M{"userid": newUser.UserID}).Decode(&result)
+	if err == nil {
 		fmt.Printf("user already exist, err is %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return nil, err
 	}
 
@@ -71,21 +72,25 @@ func SignIn(c *gin.Context) (*string, error) {
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	err := collection.FindOne(mongoCtx, bson.M{"user_id": user.UserID}).Decode(&result)
+	err := collection.FindOne(mongoCtx, bson.M{"userid": user.UserID}).Decode(&result)
 	if err != nil {
-		fmt.Printf("user already exist, err is %v", err)
+		fmt.Printf("user does not exist, err is %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return nil, err
 	}
 
 	//@TODO pw hash verification
 	if result.Password != user.Password {
-		fmt.Printf("invalid password, err is %v", err)
+		fmt.Printf("invalid password")
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return nil, err
 	}
 
 	token, err := auth.GenerateToken(auth.NewClaim(user.UserID), secret)
 	if err != nil {
 		fmt.Printf("err is %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return nil, err
 	}
 

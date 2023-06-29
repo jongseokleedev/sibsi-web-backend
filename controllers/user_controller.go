@@ -7,14 +7,6 @@ import (
 	"net/http"
 )
 
-type UserHandler struct {
-	userService UserServiceIF
-}
-
-func NewUserHandler(userService UserServiceIF) *UserHandler {
-	return &UserHandler{userService: userService}
-}
-
 func SignUp(c *gin.Context) {
 	result, err := users.SignUp(c)
 	if err != nil {

@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -16,6 +15,7 @@ import (
 //import "github.com/jongseokleedev/sibsi-web-backend/server/configs"
 
 type Receiver struct {
+	UserId         string `json:"user_id"`
 	Name           string `json:"name"`
 	Password       string `json:"password"`
 	PhoneNumber    string `json:"phone_number""`
@@ -25,11 +25,19 @@ type Receiver struct {
 }
 
 func GetReceiver(c *gin.Context) (*Receiver, error) {
-	index, err := strconv.ParseInt(c.Param("index"), 10, 64)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
+	value, ok := c.Get("user_id")
+	if !ok {
+		fmt.Println("userID not found")
+		//@TODO Err type define
+		return nil, nil
 	}
+	userId, ok := value.(string)
+	if !ok {
+		fmt.Println("user ID type casting error")
+		//@TODO Err type define
+		return nil, nil
+	}
+
 	collection := configs.GetCollection(configs.DB, "receivers")
 	var result Receiver
 
@@ -37,7 +45,7 @@ func GetReceiver(c *gin.Context) (*Receiver, error) {
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	err = collection.FindOne(mongoCtx, bson.M{"index": index}).Decode(&result)
+	err := collection.FindOne(mongoCtx, bson.M{"userid": userId}).Decode(&result)
 	if err != nil {
 		fmt.Printf("err is %v", err)
 		return nil, err

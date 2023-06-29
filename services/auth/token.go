@@ -9,11 +9,11 @@ import (
 )
 
 type Claims struct {
-	UserID int
+	UserID string
 	jwt.StandardClaims
 }
 
-func NewClaim(userID int) Claims {
+func NewClaim(userID string) Claims {
 	now := time.Now()
 	claims := &Claims{
 
