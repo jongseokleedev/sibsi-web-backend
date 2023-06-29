@@ -3,9 +3,11 @@ package configs
 import (
 	"context"
 	"fmt"
+	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"os"
 	"time"
 )
 
@@ -46,4 +48,26 @@ var DB = ConnectDB()
 func GetCollection(client *mongo.Client, collectionName string) *mongo.Collection {
 	collection := client.Database(MongoDbDatabase).Collection(collectionName)
 	return collection
+}
+
+var client *redis.Client
+
+func RedisInit() {
+	dsn := os.Getenv("REDIS_DSN")
+	if len(dsn) == 0 {
+		dsn = "localhost:6379"
+	}
+
+	client = redis.NewClient(&redis.Options{
+		Addr: dsn,
+	})
+
+	_, err := client.Ping().Result()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func GetClient() *redis.Client {
+	return client
 }
