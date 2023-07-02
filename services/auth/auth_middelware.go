@@ -27,7 +27,7 @@ const (
 var secret = os.Getenv("SECRET")
 
 func TokenAuthMiddleware(c *gin.Context) {
-	token, err := getTokenFromRequest(c.Request)
+	token, err := GetTokenFromRequest(c.Request)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"status": http.StatusUnauthorized, "error": "Authentication failed"})
 		c.Abort()
@@ -61,7 +61,7 @@ func TokenAuthMiddleware(c *gin.Context) {
 
 func (a *authenticationMiddleware) StripTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := getTokenFromRequest(r)
+		token, err := GetTokenFromRequest(r)
 		if err != nil {
 			http.Error(w, err.Error(), responses.ErrStatusCode(err))
 			return
@@ -79,7 +79,7 @@ func (a *authenticationMiddleware) StripTokenMiddleware(next http.Handler) http.
 	})
 }
 
-func getTokenFromRequest(r *http.Request) (string, error) {
+func GetTokenFromRequest(r *http.Request) (string, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return "", errors.New(responses.ErrAuthorizationHeaderRequired)

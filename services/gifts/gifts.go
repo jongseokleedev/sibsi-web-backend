@@ -2,6 +2,7 @@ package gifts
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jongseokleedev/sibsi-web-backend/server/configs"
@@ -14,6 +15,7 @@ import (
 )
 
 type Provider struct {
+	OwnerUserID      string `json:"owner_user_id"`
 	Name             string `json:"name"`
 	PhoneNumber      string `json:"phone_number"`
 	NickName         string `json:"nick_name"`
@@ -23,7 +25,8 @@ type Provider struct {
 }
 
 type Gift struct {
-	Name string `json:"name"`
+	OwnerUserID string `json:"owner_user_id"`
+	Name        string `json:"name"`
 	//Image            string   `json:"image"`
 	//AWS S3
 	Description      string   `json:"description"`
@@ -103,10 +106,26 @@ func GetAllProviders(c *gin.Context) ([]*Provider, error) {
 }
 
 func CreateNewGift(c *gin.Context) (*mongo.InsertOneResult, error) {
+	value, ok := c.Get("user_id")
+	if !ok {
+		fmt.Println("userID not found")
+		return nil, errors.New("id not found")
+	}
+	userId, ok := value.(string)
+	if !ok {
+		fmt.Println("user ID type casting error")
+		return nil, errors.New("type casting error")
+	}
 	var newGift Gift
 	if err := c.BindJSON(&newGift); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return nil, err
+	}
+
+	// userId 값 비교
+	if newGift.OwnerUserID != userId {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid userId"})
+		return nil, errors.New("invalid userId")
 	}
 
 	collection := configs.GetCollection(configs.DB, "gifts")
@@ -115,21 +134,44 @@ func CreateNewGift(c *gin.Context) (*mongo.InsertOneResult, error) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return nil, err
 	}
+	newGiftId := insertResult.InsertedID.(primitive.ObjectID).Hex()
+	receiverCollection := configs.GetCollection(configs.DB, "receivers")
+	update := bson.M{
+		"$push": bson.M{"giftids": newGiftId},
+	}
+
+	_, err = receiverCollection.UpdateOne(context.Background(), bson.M{"userid": userId}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return nil, err
+	}
+
 	return insertResult, nil
 }
 
 func UpdateGift(c *gin.Context) (*mongo.UpdateResult, error) {
-	id := c.Param("id")                            // Get the id from the URL parameter
-	objectId, err := primitive.ObjectIDFromHex(id) // Convert the id from string to ObjectID
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return nil, err
+	value, ok := c.Get("user_id")
+	if !ok {
+		fmt.Println("userID not found")
+		//@TODO Err type define
+		return nil, errors.New("id not found")
+	}
+	userId, ok := value.(string)
+	if !ok {
+		fmt.Println("user ID type casting error")
+		//@TODO Err type define
+		return nil, errors.New("type casting error")
 	}
 
 	var updatedGift Gift
 	if err := c.BindJSON(&updatedGift); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return nil, err
+	}
+	// userId 값 비교
+	if updatedGift.OwnerUserID != userId {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid userId"})
+		return nil, errors.New("invalid userId")
 	}
 
 	collection := configs.GetCollection(configs.DB, "gifts")
@@ -138,7 +180,7 @@ func UpdateGift(c *gin.Context) (*mongo.UpdateResult, error) {
 		"$set": updatedGift,
 	}
 
-	updateResult, err := collection.UpdateOne(context.Background(), bson.M{"_id": objectId}, update)
+	updateResult, err := collection.UpdateOne(context.Background(), bson.M{"owner_user_id": userId}, update)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return nil, err
@@ -187,10 +229,27 @@ func CreateProvider(c *gin.Context) (*mongo.InsertOneResult, error) {
 }
 
 func RemoveProviderFromGift(c *gin.Context) (*mongo.UpdateResult, error) {
-	id := c.Param("id")                                // Get the id from the URL parameter
-	giftObjectId, err := primitive.ObjectIDFromHex(id) // Convert the id from string to ObjectID
+	value, ok := c.Get("user_id")
+	if !ok {
+		fmt.Println("userID not found")
+		return nil, errors.New("id not found")
+	}
+	userId, ok := value.(string)
+	if !ok {
+		fmt.Println("user ID type casting error")
+		return nil, errors.New("type casting error")
+	}
+
+	giftCollection := configs.GetCollection(configs.DB, "gifts")
+	var result Gift
+
+	// 새 context.Context 객체 생성
+	mongoCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err := giftCollection.FindOne(mongoCtx, bson.M{"owner_user_id": userId}).Decode(&result)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		fmt.Printf("cannot find gift for corresponding user Id %v", err)
 		return nil, err
 	}
 
@@ -211,11 +270,10 @@ func RemoveProviderFromGift(c *gin.Context) (*mongo.UpdateResult, error) {
 	}
 
 	// If provider ID is valid, remove it from the gift
-	giftCollection := configs.GetCollection(configs.DB, "gifts")
 	update := bson.M{
 		"$pull": bson.M{"providerids": providerID},
 	}
-	updateResult, err := giftCollection.UpdateOne(context.Background(), bson.M{"_id": giftObjectId}, update)
+	updateResult, err := giftCollection.UpdateOne(context.Background(), bson.M{"owner_user_id": userId}, update)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return nil, err

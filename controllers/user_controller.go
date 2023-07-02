@@ -40,3 +40,19 @@ func SignIn(c *gin.Context) {
 	}
 
 }
+
+func Logout(c *gin.Context) {
+	err := users.LogOut(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, responses.HttpResponse{
+			Status:  http.StatusBadRequest,
+			Message: "Bad Request",
+		})
+	} else {
+		c.JSON(http.StatusOK, responses.HttpResponse{
+			Status:  http.StatusOK,
+			Message: "success",
+		})
+	}
+
+}

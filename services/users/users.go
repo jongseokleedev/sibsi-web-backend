@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jongseokleedev/sibsi-web-backend/server/configs"
@@ -96,4 +97,31 @@ func SignIn(c *gin.Context) (*string, error) {
 
 	return &token, nil
 
+}
+
+func LogOut(c *gin.Context) error {
+	// 클라이언트로부터 토큰을 받아옴
+	token, err := auth.GetTokenFromRequest(c.Request)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"status": http.StatusUnauthorized, "error": "Authentication failed"})
+		c.Abort()
+		return nil
+	}
+
+	// 토큰 유효성 검사
+	claims, err := auth.ValidateToken(token, secret)
+	if err != nil {
+		return err
+	}
+
+	// 토큰 만료 시간 확인
+	expirationTime := time.Unix(int64(claims["exp"].(float64)), 0)
+	if time.Now().After(expirationTime) {
+		return errors.New("token has expired")
+	}
+
+	// 토큰을 블랙리스트에 추가
+	auth.Blacklist = append(auth.Blacklist, token)
+	
+	return nil
 }

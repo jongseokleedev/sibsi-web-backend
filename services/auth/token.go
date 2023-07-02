@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var Blacklist []string
+
 type Claims struct {
 	UserID string
 	jwt.StandardClaims
@@ -31,6 +33,10 @@ func GenerateToken(claim Claims, secret string) (string, error) {
 }
 
 func ValidateToken(token string, secret string) (jwt.MapClaims, error) {
+	ok := IsTokenBlacklisted(token)
+	if !ok {
+		return nil, errors.New("Token is expired, found in blacklist")
+	}
 	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
 		_, ok := t.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
@@ -48,4 +54,14 @@ func ValidateToken(token string, secret string) (jwt.MapClaims, error) {
 	}
 
 	return mapClaims, nil
+}
+
+func IsTokenBlacklisted(tokenString string) bool {
+	// 블랙리스트에 토큰이 있는지 확인
+	for _, blacklistedToken := range Blacklist {
+		if blacklistedToken == tokenString {
+			return true
+		}
+	}
+	return false
 }

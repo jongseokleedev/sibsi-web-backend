@@ -8,8 +8,7 @@ import (
 func UserRoutes(rg *gin.RouterGroup) {
 	index := rg.Group("")
 
-	//index.GET("/receivers", controllers.GetReceiver)
 	index.POST("/users", controllers.SignUp)
-	index.POST("/users/token", controllers.SignIn)
-	//index.POST("/receiver/new", controllers.CreateNewReceiver)
+	index.POST("/users/login", controllers.SignIn)
+	index.POST("/users/logout", controllers.Logout)
 }

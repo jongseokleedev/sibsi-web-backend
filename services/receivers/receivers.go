@@ -2,6 +2,7 @@ package receivers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jongseokleedev/sibsi-web-backend/server/configs"
@@ -28,14 +29,12 @@ func GetReceiver(c *gin.Context) (*Receiver, error) {
 	value, ok := c.Get("user_id")
 	if !ok {
 		fmt.Println("userID not found")
-		//@TODO Err type define
-		return nil, nil
+		return nil, errors.New("id not found")
 	}
 	userId, ok := value.(string)
 	if !ok {
 		fmt.Println("user ID type casting error")
-		//@TODO Err type define
-		return nil, nil
+		return nil, errors.New("type casting error")
 	}
 
 	collection := configs.GetCollection(configs.DB, "receivers")
@@ -45,7 +44,7 @@ func GetReceiver(c *gin.Context) (*Receiver, error) {
 	mongoCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	err := collection.FindOne(mongoCtx, bson.M{"userid": userId}).Decode(&result)
+	err := collection.FindOne(mongoCtx, bson.M{"user_id": userId}).Decode(&result)
 	if err != nil {
 		fmt.Printf("err is %v", err)
 		return nil, err
@@ -55,10 +54,20 @@ func GetReceiver(c *gin.Context) (*Receiver, error) {
 }
 
 func CreateNewReceiver(c *gin.Context) (*mongo.InsertOneResult, error) {
+	userId, ok := c.Get("user_id")
+	if !ok {
+		fmt.Println("userID not found")
+		return nil, errors.New("id not found")
+	}
 	var newReceiver Receiver
 	if err := c.BindJSON(&newReceiver); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return nil, err
+	}
+	// userId 값 비교
+	if newReceiver.UserId != userId {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid userId"})
+		return nil, errors.New("invalid userId")
 	}
 
 	collection := configs.GetCollection(configs.DB, "receivers")
