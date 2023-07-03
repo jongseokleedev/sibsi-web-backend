@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/gin-gonic/gin"
 	"github.com/jongseokleedev/sibsi-web-backend/server/configs"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,15 +22,14 @@ type Provider struct {
 	PhoneNumber      string `json:"phone_number"`
 	NickName         string `json:"nick_name"`
 	Message          string `json:"message"`
-	Amount           bool   `json:"amount"`
-	AmountVisibility string `json:"amount_visibility"`
+	Amount           int64  `json:"amount"`
+	AmountVisibility bool   `json:"amount_visibility"`
 }
 
 type Gift struct {
-	OwnerUserID string `json:"owner_user_id"`
-	Name        string `json:"name"`
-	//Image            string   `json:"image"`
-	//AWS S3
+	OwnerUserID      string   `json:"owner_user_id"`
+	Name             string   `json:"name"`
+	Image            string   `json:"image"`
 	Description      string   `json:"description"`
 	TargetAmount     int64    `json:"target_amount"`
 	CurrentAmount    int64    `json:"current_amount"`
@@ -106,6 +107,8 @@ func GetAllProviders(c *gin.Context) ([]*Provider, error) {
 }
 
 func CreateNewGift(c *gin.Context) (*mongo.InsertOneResult, error) {
+	//configs.Upload(c)
+
 	value, ok := c.Get("user_id")
 	if !ok {
 		fmt.Println("userID not found")
@@ -127,6 +130,13 @@ func CreateNewGift(c *gin.Context) (*mongo.InsertOneResult, error) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid userId"})
 		return nil, errors.New("invalid userId")
 	}
+	//Upload image to S3 aws server
+	result, err := UploadImage(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return nil, err
+	}
+	newGift.Image = result
 
 	collection := configs.GetCollection(configs.DB, "gifts")
 	insertResult, err := collection.InsertOne(context.Background(), newGift)
@@ -137,7 +147,7 @@ func CreateNewGift(c *gin.Context) (*mongo.InsertOneResult, error) {
 	newGiftId := insertResult.InsertedID.(primitive.ObjectID).Hex()
 	receiverCollection := configs.GetCollection(configs.DB, "receivers")
 	update := bson.M{
-		"$push": bson.M{"giftids": newGiftId},
+		"$push": bson.M{"giftid": newGiftId},
 	}
 
 	_, err = receiverCollection.UpdateOne(context.Background(), bson.M{"userid": userId}, update)
@@ -153,13 +163,11 @@ func UpdateGift(c *gin.Context) (*mongo.UpdateResult, error) {
 	value, ok := c.Get("user_id")
 	if !ok {
 		fmt.Println("userID not found")
-		//@TODO Err type define
 		return nil, errors.New("id not found")
 	}
 	userId, ok := value.(string)
 	if !ok {
 		fmt.Println("user ID type casting error")
-		//@TODO Err type define
 		return nil, errors.New("type casting error")
 	}
 
@@ -173,6 +181,13 @@ func UpdateGift(c *gin.Context) (*mongo.UpdateResult, error) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid userId"})
 		return nil, errors.New("invalid userId")
 	}
+	//Upload image to S3 aws server
+	result, err := UploadImage(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return nil, err
+	}
+	updatedGift.Image = result
 
 	collection := configs.GetCollection(configs.DB, "gifts")
 	//Update gift fields which is in body json format.
@@ -287,4 +302,31 @@ func RemoveProviderFromGift(c *gin.Context) (*mongo.UpdateResult, error) {
 	}
 
 	return updateResult, nil
+}
+
+func UploadImage(c *gin.Context) (string, error) {
+	file, _ := c.FormFile("file")
+	src, err := file.Open()
+	if err != nil {
+		return "", err
+	}
+	defer src.Close()
+
+	// The session the S3 Uploader will use
+	sess := configs.CreateSession()
+
+	// Create an uploader with the session and default options
+	uploader := s3manager.NewUploader(sess)
+
+	// Upload the file to S3.
+	result, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String("sibsi-image-bucket"), // 버킷 이름
+		Key:    aws.String(file.Filename),
+		Body:   src,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return result.Location, err
 }

@@ -18,11 +18,10 @@ import (
 type Receiver struct {
 	UserId         string `json:"user_id"`
 	Name           string `json:"name"`
-	Password       string `json:"password"`
 	PhoneNumber    string `json:"phone_number""`
 	AccountAddress string `json:"account_address"`
 	AccountBank    string `json:"account_bank"`
-	GiftId         int64  `json:"gift_id"`
+	GiftId         string `json:"gift_id"`
 }
 
 func GetReceiver(c *gin.Context) (*Receiver, error) {
@@ -64,11 +63,7 @@ func CreateNewReceiver(c *gin.Context) (*mongo.InsertOneResult, error) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return nil, err
 	}
-	// userId 값 비교
-	if newReceiver.UserId != userId {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid userId"})
-		return nil, errors.New("invalid userId")
-	}
+	newReceiver.UserId = userId.(string)
 
 	collection := configs.GetCollection(configs.DB, "receivers")
 	insertResult, err := collection.InsertOne(context.Background(), newReceiver)
