@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"fmt"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -19,6 +20,7 @@ var (
 func EnvSetup() {
 	err := godotenv.Load()
 	if err != nil {
+		fmt.Printf("%v", err)
 		log.Fatal("Error Loading .env file. Please put your .env file in root project")
 	}
 
